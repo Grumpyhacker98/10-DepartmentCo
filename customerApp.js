@@ -20,7 +20,9 @@ connection.connect(function (err, res) {
 function productQuery() {
     connection.query("SELECT * FROM products", function (err, res) {
         if (err) throw err;
+
         console.log(res);
+
         inquirer.prompt([
             {
                 name: "choice",
@@ -40,20 +42,39 @@ function productQuery() {
                 message: "How much would you like to purchase",
                 name: "quantity"
             },
-        ]).then(function (data) {
-            correction = data.id - 1
-            if(res[correction].stock_quantity<data.quantity){
+        ]).then(function (purchase) {
+            correction = purchase.id - 1
+
+            if (res[correction].stock_quantity < purchase.quantity) {
                 console.log("not enough in stock")
                 connection.end()
                 return false
             }
 
-            queryString = "SELECT 'item_ID' = '" + data.id + "' FROM products"
-            connection.query(queryString, function (err, res) {
-                if (err) throw err;
-                console.log(res);
+            newPrice = purchase.quantity * res[correction].price
+            newMessage = "This will cost $" + newPrice + ", Please confirm the purchase"
+            inquirer.prompt([
+                {   
+                    name: "this",
+                    type: "confirm",
+                    message: newMessage,
+                }
+            ]).then(function (awnser) {
+                if (awnser.this) {
+                    
+                    newStock = res[correction].stock_quantity - purchase.quantity
+                    connection.query("UPDATE products SET ? WHERE ?",
+                        [{ stock_quantity: newStock }, { item_ID: purchase.id }],
+                        function (error) {
+                            if (error) throw err;
+                            console.log("Placed order successfully!");
+                            connection.end()
+                        }
+                    );
+                }else{
+                    connection.end()
+                }
             });
-            connection.end()
         });
     });
 }
