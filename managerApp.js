@@ -50,8 +50,8 @@ function actionQuery() {
 function viewInventory() {
     connection.query("SELECT * FROM products", function (err, res) {
         if (err) throw err;
-        for(var i = 0;i<res.length;i++){
-            console.log("ID: "+res[i].item_ID+" Name: "+res[i].product_name+" Price: "+res[i].price+" Quantity: "+res[i].stock_quantity)
+        for (var i = 0; i < res.length; i++) {
+            console.log("ID: " + res[i].item_ID + " Name: " + res[i].product_name + " Price: " + res[i].price + " Quantity: " + res[i].stock_quantity)
         }
         connection.end()
     })
@@ -61,17 +61,88 @@ function lowInventory() {
     connection.query("SELECT * FROM products WHERE stock_quantity < 5", function (err, res) {
         if (err) throw err;
         console.log("The following products have a quantity of 5 or lower")
-        for(var i = 0;i<res.length;i++){
-            console.log("ID: "+res[i].item_ID+" Name: "+res[i].product_name+" Price: "+res[i].price+" Quantity: "+res[i].stock_quantity)
+        for (var i = 0; i < res.length; i++) {
+            console.log("ID: " + res[i].item_ID + " Name: " + res[i].product_name + " Price: " + res[i].price + " Quantity: " + res[i].stock_quantity)
         }
         connection.end()
     })
 }
-// * If a manager selects `Add to Inventory`, your app should display a prompt that will let the manager "add more" of any item currently in the store.
+//display a prompt that will let the manager "add more" of any item currently in the store.
 function addInventory() {
-
+    connection.query("SELECT * FROM products", function (err, res) {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                name: "choice",
+                type: "rawlist",
+                choices: function () {
+                    var choiceArray = [];
+                    for (var i = 0; i < res.length; i++) {
+                        choiceArray.push(res[i].item_ID);
+                    }
+                    return choiceArray;
+                },
+                message: "What products stock do you need to update",
+                name: "id"
+            },
+            {
+                type: "input",
+                message: "How many units need to be added?",
+                name: "quantity"
+            },
+        ]).then(function (add) {
+            console.log(add.id)
+            console.log(add.quantity)
+            newStock = res[add.id - 1].stock_quantity + add.quantity
+            connection.query("UPDATE products SET ? WHERE ?",
+                [{ stock_quantity: newStock }, { item_ID: add.id }],
+                function (error) {
+                    if (error) throw err;
+                    console.log("Placed order successfully!");
+                    connection.end()
+                }
+            );
+        });
+    })
 }
-// * If a manager selects `Add New Product`, it should allow the manager to add a completely new product to the store.
+// add a completely new product to the store.
 function addProduct() {
-
+    inquirer.prompt([
+        {
+            name: "name",
+            type: "input",
+            message: "What is the name of the new product?"
+        },
+        {
+            name: "department",
+            type: "input",
+            message: "what department does it belong in?"
+        },
+        {
+            name: "price",
+            type: "input",
+            message: "How much does it cost?"
+        },
+        {
+            name: "quantity",
+            type: "input",
+            message: "How many does the store have?"
+        },
+    ]).then(function (answer) {
+        // when finished prompting, insert a new item into the db with that info
+        connection.query(
+            "INSERT INTO products SET ?",
+            {
+                product_name: answer.name,
+                department_name: answer.department,
+                price: answer.price,
+                stock_quantity: answer.quantity
+            },
+            function (err) {
+                if (err) throw err;
+                console.log("Succesfully added product");
+                connection.end()
+            }
+        );
+    });
 }

@@ -21,8 +21,10 @@ function productQuery() {
     connection.query("SELECT * FROM products", function (err, res) {
         if (err) throw err;
 
-        console.log(res);
-
+        for(var i = 0;i<res.length;i++){
+            console.log("ID: "+res[i].item_ID+" Name: "+res[i].product_name+" Price: "+res[i].price+" Quantity: "+res[i].stock_quantity)
+        }
+        
         inquirer.prompt([
             {
                 name: "choice",
@@ -61,7 +63,7 @@ function productQuery() {
                 }
             ]).then(function (awnser) {
                 if (awnser.this) {
-                    
+
                     newStock = res[correction].stock_quantity - purchase.quantity
                     connection.query("UPDATE products SET ? WHERE ?",
                         [{ stock_quantity: newStock }, { item_ID: purchase.id }],
